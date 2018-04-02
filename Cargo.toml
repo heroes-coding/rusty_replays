@@ -1,0 +1,6 @@
+[package]
+name = "replays"
+version = "0.1.0"
+authors = ["heroes-coding <jeremy@heroes.report>"]
+
+[dependencies]
