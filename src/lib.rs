@@ -2,7 +2,8 @@
 extern crate lazy_static;
 use std::sync::Mutex;
 
-mod unpack;
+pub mod unpack;
+pub mod filter;
 use unpack::Replay;
 extern crate time;
 use time::PreciseTime;
@@ -10,25 +11,19 @@ use time::PreciseTime;
 
 lazy_static! {
     #[derive(Debug)]
-    static ref REPLAYS: Mutex<Vec<Replay>> = Mutex::new(vec![]);
-    static ref ROLES: Mutex<Vec<u8>> = Mutex::new(vec![]);
-    static ref FRANCHISES: Mutex<Vec<u8>> = Mutex::new(vec![]);
-    static ref N_HEROES: Mutex<u8> = Mutex::new(0);
+    pub static ref REPLAYS: Mutex<Vec<Replay>> = Mutex::new(vec![]);
+    pub static ref ROLES: Mutex<Vec<u8>> = Mutex::new(vec![]);
+    pub static ref FRANCHISES: Mutex<Vec<u8>> = Mutex::new(vec![]);
+    pub static ref N_HEROES: Mutex<u8> = Mutex::new(0);
 }
 
 fn add_replay(replay: Replay) {
     REPLAYS.lock().unwrap().push(replay);
 }
 
-
-pub fn print_replays() {
-    for i in 0..2 {
-        println!("Replay {}: {}",i,REPLAYS.lock().unwrap()[i]);
-    }
-    println!("Replay length {}", REPLAYS.lock().unwrap().len());
+pub fn print_replays(index: usize) {
+    println!("Replay {}: {}",index,REPLAYS.lock().unwrap()[index]);
 }
-
-
 
 pub fn add_basic_info(n_heroes: u32, franchises_and_roles: *mut u8) {
     let mut p = franchises_and_roles;
@@ -43,10 +38,6 @@ pub fn add_basic_info(n_heroes: u32, franchises_and_roles: *mut u8) {
     
     let mut roles = &mut ROLES.lock().unwrap().clone();
     println!("ROLES[0]: {:?}",roles[0]);
-
-    let mut ros = &mut roles;
-    println!("ROLES[0]: {:?}",ros[0]);
-
 
     println!("ROLES: {:?}",*ROLES.lock().unwrap());
     println!("N_HEROES: {}",*N_HEROES.lock().unwrap());
@@ -78,6 +69,13 @@ pub fn add_replays(rep_ints: Vec<u32>, n_replays: usize) {
         }
     }
     println!("{} seconds to unpack {} replays", start.to(end),n_replays);
+    */
+    /*
+    let ateam : Vec<u8> = vec![];
+    let oteam : Vec<u8> = vec![];
+    let aroles : [u8;5] = [2,0,0,0,0];
+    let oroles : [u8;5] = [2,0,0,0,0];
+    filter::filter_replays(ateam,oteam, aroles, oroles);
     */
     
 }
