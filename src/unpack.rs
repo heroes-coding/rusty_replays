@@ -36,11 +36,8 @@ fn build_hero(talents: [u8;7], globes: u8, strucs: u8, mercs: u8, kda: u8, mmr: 
 
 #[derive(Debug)]
 pub struct Replay {
-    pub heroes: [Hero;10],
+    pub heroes: [[Hero;5];2],
     pub teams: [[u8;5];2],
-    pub team1: [u8;5],
-    pub roles0: [u8;5],
-    pub roles1: [u8;5],
     pub map: u8,
     pub first_to_10: u8,
     pub first_to_20: u8,
@@ -61,19 +58,20 @@ impl fmt::Display for Replay {
         // operation succeeded or failed. Note that `write!` uses syntax which
         // is very similar to `println!`.
         write!(f, "MSL: {}, Length (mins): {}, Build: {}, Winners: {}, First To 10: {}, 20: {}, Fort: {}, Avg Lev D: {}, Region: {}",self.msl, self.length, self.build, self.winners, self.first_to_10, self.first_to_20, self.first_fort, self.avg_lev_diff, self.region).expect("could not write replay");;
-        for i in 0..10 {
-            write!(f, "\n{:?}", self.heroes[i]).expect("could not hero data");
+        for t in 0..2 {
+            write!(f, "\nTeam {}:",t);
+            for i in 0..5 {
+                write!(f, "\n{:?}", self.heroes[t][i]).expect("could not hero data");
+            }
         }
-        write!(f, "\nTeam0: {:?}", self.team0).expect("could not write team0");
-        write!(f, "\nTeam1: {:?}", self.team1).expect("could not write team1");
-        write!(f, "\nRoles0: {:?}", self.roles0).expect("could not write team0");
-        write!(f, "\nRoles1: {:?}", self.roles1).expect("could not write team1");
+        
+        write!(f, "\nTeams: {:?}", self.teams).expect("could not write teams");
         Ok(())
     }
 }
 
-fn build_replay(heroes: [Hero;10], team0: [u8;5], team1: [u8;5], roles0: [u8;5], roles1: [u8;5], map: u8, first_to_10: u8, first_to_20: u8, first_fort: u8, avg_lev_diff: u8, winners: u8, region: u8, build: u8, length: u8, msl: u32) -> Replay {
-    Replay { heroes, team0, team1, roles0, roles1, map, first_to_10, first_to_20, first_fort, avg_lev_diff, winners, region, build, length, msl }
+fn build_replay(heroes: [[Hero;5];2], teams: [[u8;5];2], map: u8, first_to_10: u8, first_to_20: u8, first_fort: u8, avg_lev_diff: u8, winners: u8, region: u8, build: u8, length: u8, msl: u32) -> Replay {
+    Replay { heroes, teams, map, first_to_10, first_to_20, first_fort, avg_lev_diff, winners, region, build, length, msl }
 }
 
 fn parse_int(data_int: u32, int_number: usize, rep_data: &mut [u8]) {
@@ -117,37 +115,30 @@ pub fn parse_replays(replay_bytes: Vec<u32>, n_replays: usize, days_since_launch
         }
         let start = PreciseTime::now();
 
-        let team0 : [u8;5] = [d[0],d[1],d[2],d[3],d[4]];
-        let team1 : [u8;5] = [d[5],d[6],d[7],d[8],d[9]];
-        let mut roles0 : [u8;5] = [0,0,0,0,0];
-        let mut roles1 : [u8;5] = [0,0,0,0,0];
-        for h in 0..5 {
-            let role = ::ROLES.lock().unwrap()[d[h] as usize] as usize;
-            roles0[role] = roles0[role]+1;
-        }
-        for h in 5..10 {
-            let role = ::ROLES.lock().unwrap()[d[h] as usize] as usize;
-            roles1[role] = roles1[role]+1;
-        }
+        let teams : [[u8;5];2] = [ [d[0],d[1],d[2],d[3],d[4]], [d[5],d[6],d[7],d[8],d[9]]] ;
 
-        let heroes : [Hero;10] = [ 
-            build_hero([d[60], d[61], d[62], d[63], d[64], d[65], d[66]], d[20], d[30], d[50], d[10], d[40]),
-            build_hero([d[67], d[68], d[69], d[70], d[71], d[72], d[73]], d[21], d[31], d[51], d[11], d[41]),
-            build_hero([d[74], d[75], d[76], d[77], d[78], d[79], d[80]], d[22], d[32], d[52], d[12], d[42]),
-            build_hero([d[81], d[82], d[83], d[84], d[85], d[86], d[87]], d[23], d[33], d[53], d[13], d[43]),
-            build_hero([d[88], d[89], d[90], d[91], d[92], d[93], d[94]], d[24], d[34], d[54], d[14], d[44]),
-            build_hero([d[95], d[96], d[97], d[98], d[99], d[100], d[101]], d[25], d[35], d[55], d[15], d[45]),
-            build_hero([d[102], d[103], d[104], d[105], d[106], d[107], d[108]], d[26], d[36], d[56], d[16], d[46]),
-            build_hero([d[109], d[110], d[111], d[112], d[113], d[114], d[115]], d[27], d[37], d[57], d[17], d[47]),
-            build_hero([d[116], d[117], d[118], d[119], d[120], d[121], d[122]], d[28], d[38], d[58], d[18], d[48]),
-            build_hero([d[123], d[124], d[125], d[126], d[127], d[128], d[129]], d[29], d[39], d[59], d[19], d[49])
+        let heroes : [[Hero;5];2] = [ 
+            [
+                build_hero([d[60], d[61], d[62], d[63], d[64], d[65], d[66]], d[20], d[30], d[50], d[10], d[40]),
+                build_hero([d[67], d[68], d[69], d[70], d[71], d[72], d[73]], d[21], d[31], d[51], d[11], d[41]),
+                build_hero([d[74], d[75], d[76], d[77], d[78], d[79], d[80]], d[22], d[32], d[52], d[12], d[42]),
+                build_hero([d[81], d[82], d[83], d[84], d[85], d[86], d[87]], d[23], d[33], d[53], d[13], d[43]),
+                build_hero([d[88], d[89], d[90], d[91], d[92], d[93], d[94]], d[24], d[34], d[54], d[14], d[44])
+                ],
+            [
+                build_hero([d[95], d[96], d[97], d[98], d[99], d[100], d[101]], d[25], d[35], d[55], d[15], d[45]),
+                build_hero([d[102], d[103], d[104], d[105], d[106], d[107], d[108]], d[26], d[36], d[56], d[16], d[46]),
+                build_hero([d[109], d[110], d[111], d[112], d[113], d[114], d[115]], d[27], d[37], d[57], d[17], d[47]),
+                build_hero([d[116], d[117], d[118], d[119], d[120], d[121], d[122]], d[28], d[38], d[58], d[18], d[48]),
+                build_hero([d[123], d[124], d[125], d[126], d[127], d[128], d[129]], d[29], d[39], d[59], d[19], d[49])
+            ]
         ];
         let end = PreciseTime::now();
         hero_build_count = hero_build_count + start.to(end);
 
         let start = PreciseTime::now();
 
-        let rep = build_replay(heroes, team0, team1, roles0, roles1, d[130], d[131], d[140], d[132], d[133], d[136], d[137]+1, d[138], d[139]+1, days_since_launch*1440 + (d[134] as u32 *60) as u32 + d[135] as u32);
+        let rep = build_replay(heroes, teams, d[130], d[131], d[140], d[132], d[133], d[136], d[137]+1, d[138], d[139]+1, days_since_launch*1440 + (d[134] as u32 *60) as u32 + d[135] as u32);
 
         let end = PreciseTime::now();
         replay_build_count = replay_build_count + start.to(end);
@@ -161,9 +152,10 @@ pub fn parse_replays(replay_bytes: Vec<u32>, n_replays: usize, days_since_launch
     }
 
 
-    ::print_replays(0);
+    // ::print_replays(0);
+    &::REPLAYS.lock().unwrap().sort_by(|a, b| a.msl.cmp(&b.msl)); // <- THIS SIMPLE LINE SORTS ALL REPLAYS LOADED BY MSL.  SWEET
     let refr = &::REPLAYS.lock().unwrap()[0];
-    println!("TEAM0 FROM refr:::::: {:?}",refr.team0);
+    println!("TEAMS FROM refr:::::: {:?},hero[0]:{:?}",refr.teams,refr.heroes[0]);
     
     println!("{} seconds to unpack ints", unpack_count);
     println!("{} seconds to build heroes", hero_build_count);
