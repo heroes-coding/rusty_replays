@@ -12,32 +12,32 @@ pub fn sigma(stats: &Vec<u8>, mean: f32) -> f32 {
     (ss/(n-1.)).powf(0.5)
 }
 
-pub fn exponential_smoother(Y: &Vec<u8>, X: &Vec<u32>) -> [Vec<f32>;2] {
+pub fn exponential_smoother(ys: &Vec<u8>, xs: &Vec<u32>) -> [Vec<f32>;2] {
     let filter_outliers = false;
     let should_smooth = false;
 
-    let n_points = Y.len();
+    let n_points = ys.len();
     let mut smoothed_y : Vec<f32> = vec![];
-    if (should_smooth) {
-        let ALPHA_M1 : f32 = 0.99;
-        let ALPHAcutoff = 458; // round(log(0.01)/(log(1-ALPHA)));
+    if should_smooth {
+        let alpha_m1 : f32 = 0.99;
+        let alpha_cutoff = 458; // round(log(0.01)/(log(1-ALPHA)));
         let mut exp_den : [f32;458] = [1.0;458];
         let mut exp_vals : [f32;458] = [1.0;458];
-        for i in 1..ALPHAcutoff {
-            let new_weight : f32 = exp_vals[i-1]*ALPHA_M1;
+        for i in 1..alpha_cutoff {
+            let new_weight : f32 = exp_vals[i-1]*alpha_m1;
             exp_vals[i] = new_weight;
             exp_den[i] = exp_den[i-1]+new_weight;
         }
 
         for x in 1..n_points {
-            let mut num = Y[x] as f32;
-            let den = exp_den[if ALPHAcutoff < x { ALPHAcutoff } else { x }];
+            let mut num = ys[x] as f32;
+            let den = exp_den[if alpha_cutoff < x { alpha_cutoff } else { x }];
             let mut expo = 1;
             for z in 0..x-1 {
                 let y = x - z;
-                num += (Y[y] as f32)*exp_vals[expo];
+                num += (ys[y] as f32)*exp_vals[expo];
                 expo += 1;
-                if expo >= ALPHAcutoff {
+                if expo >= alpha_cutoff {
                     break;
                 } else if x==1 {
                     continue;
@@ -54,7 +54,7 @@ pub fn exponential_smoother(Y: &Vec<u8>, X: &Vec<u32>) -> [Vec<f32>;2] {
             let min = if x < points_around { 0 } else { x-points_around };
             let max = if x+points_around >= n_points { n_points - 1 } else { x+points_around - 1 };
             for i in min..max {
-                sum_around += Y[i+1] as f32;
+                sum_around += ys[i+1] as f32;
                 sum_count += 1.;
             }
             smoothed_y.push( sum_around/sum_count );
@@ -76,24 +76,24 @@ pub fn exponential_smoother(Y: &Vec<u8>, X: &Vec<u32>) -> [Vec<f32>;2] {
             let y = smoothed_y[p];
             if (y-mean_y).abs() > 2.*sigma_y { continue; } // outlier
             smoothed_y[counter] = y;
-            smoothed_x.push(X[p] as f32);
+            smoothed_x.push(xs[p] as f32);
             counter += 1;
         }
         smoothed_y = smoothed_y[0..counter].to_vec();
     } else {
-        for p in 0..n_points-offset { smoothed_x.push(X[p] as f32); }
+        for p in 0..n_points-offset { smoothed_x.push(xs[p] as f32); }
         counter = smoothed_y.len();
     }
 
     let mut r = 0;
     let threshold = 25.;
-    if (counter as f32 > threshold) {
+    if counter as f32 > threshold {
         let bin_size = (counter as f32)/threshold;
         let mut p=0;
         let mut c=0;
         let mut totx = 0.;
         let mut toty = 0.;
-        let mut prevx = X[0] as f32;
+        let mut prevx = xs[0] as f32;
         while p < counter {
             let x = smoothed_x[p];
             let y = smoothed_y[p];

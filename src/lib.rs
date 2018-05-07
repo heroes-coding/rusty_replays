@@ -1,49 +1,72 @@
 #[macro_use]
 extern crate lazy_static;
-extern crate rusty_machine as rm;
+// extern crate rusty_machine as rm;
 use std::sync::Mutex;
+use std::mem;
+use std::ffi::{CString, CStr};
+use std::os::raw::{c_char, c_void};
 
 pub mod unpack;
 pub mod filter;
 pub mod extract;
+pub mod load;
 pub mod math;
 use unpack::Replay;
-extern crate time;
-use time::PreciseTime;
-
 
 lazy_static! {
     #[derive(Debug)]
     pub static ref REPLAYS: Mutex<Vec<Replay>> = Mutex::new(vec![]);
     pub static ref ROLES: Mutex<Vec<u8>> = Mutex::new(vec![]);
     pub static ref FRANCHISES: Mutex<Vec<u8>> = Mutex::new(vec![]);
-    pub static ref N_HEROES: Mutex<u8> = Mutex::new(0);
-    
+    pub static ref N_HEROES: Mutex<usize> = Mutex::new(0);   
+    pub static ref N_FILTERED: Mutex<usize> = Mutex::new(0);   
+    pub static ref FILTERED: Mutex<Vec<[usize;2]>> = Mutex::new(vec![]);
 }
 
-fn add_replay(replay: Replay) {
-    REPLAYS.lock().unwrap().push(replay);
+#[no_mangle]
+pub extern "C" fn add_basics(franchises_and_roles: *mut u8, n_heroes: u8) {
+    load::add_basic_info(n_heroes,franchises_and_roles);
 }
 
-pub fn print_replays(index: usize) {
-    println!("Replay {}: {}",index,REPLAYS.lock().unwrap()[index]);
-}
-
-pub fn add_basic_info(n_heroes: u32, franchises_and_roles: *mut u8) {
-    let mut p = franchises_and_roles;
-    *N_HEROES.lock().unwrap() = n_heroes as u8;
-    unsafe {
-        for _i in 0..n_heroes {
-            FRANCHISES.lock().unwrap().push(*p);
-            ROLES.lock().unwrap().push(*p.offset(n_heroes as isize));
+#[no_mangle]
+pub extern "C" fn add_replays(data: *mut u32, n_replays: u32, days_since_launch: u32) {
+    let mut p = data;
+    let n_replays = n_replays as usize;
+    let mut rep_ints : Vec<u32> = Vec::new();
+    for _i in 0..n_replays*unpack::N_INTS {
+        unsafe {
+            rep_ints.push(*p);
             p = p.offset(1);
         }
     }
-    
-    let roles = &mut ROLES.lock().unwrap().clone();
-    println!("ROLES[0]: {:?}",roles[0]);
+    unpack::parse_replays(rep_ints,n_replays,days_since_launch);
+}
 
-    println!("ROLES: {:?}",*ROLES.lock().unwrap());
-    println!("N_HEROES: {}",*N_HEROES.lock().unwrap());
-    assert_eq!(78,*N_HEROES.lock().unwrap());
+#[no_mangle]
+pub extern "C" fn print_replay(replay_n: u32) -> *mut c_char {
+    let replay_string = REPLAYS.lock().unwrap()[replay_n as usize].to_string();
+    let s = CString::new(replay_string).unwrap();
+    s.into_raw()
+}
+
+#[no_mangle]
+pub extern "C" fn alloc(size: usize) -> *mut c_void {
+    let mut buf = Vec::with_capacity(size);
+    let ptr = buf.as_mut_ptr();
+    mem::forget(buf);
+    return ptr as *mut c_void;
+}
+
+#[no_mangle]
+pub extern "C" fn dealloc(ptr: *mut c_void, cap: usize) {
+    unsafe  {
+        let _buf = Vec::from_raw_parts(ptr, 0, cap);
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn dealloc_str(ptr: *mut c_char) {
+    unsafe {
+        let _ = CString::from_raw(ptr);
+    }
 }

@@ -1,5 +1,3 @@
-use unpack::Replay;
-use unpack::Hero;
 use ::math::mean;
 use ::math::sigma;
 use ::math::exponential_smoother;
@@ -21,7 +19,7 @@ pub fn extract_basic_stats(filtered: Vec<[usize;2]>, n_heroes: usize) {
     let n_reps = filtered.len();
     println!("n_heroes: {}",n_heroes);
     let mut hero_stats : Vec<HeroHolder> = vec![];
-    for i in 0..n_heroes{
+    for _ in 0..n_heroes{
         let mut hero = HeroHolder {
             globes: vec![],
             strucs: vec![],
