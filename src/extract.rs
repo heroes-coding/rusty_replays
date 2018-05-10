@@ -15,9 +15,10 @@ pub struct HeroHolder {
     pub msls: Vec<u32>
 }
 
-pub fn extract_basic_stats(filtered: Vec<[usize;2]>, n_heroes: usize) {
-    let n_reps = filtered.len();
-    println!("n_heroes: {}",n_heroes);
+pub fn extract_basic_stats() {
+    let n_reps = *::N_FILTERED.lock().expect("Could not open the N_FILTERED mutex");
+    let n_heroes = *::N_HEROES.lock().expect("Could not open the N_HEROES mutex");
+    println!("n_reps: {}, n_heroes: {}",n_reps,n_heroes);
     let mut hero_stats : Vec<HeroHolder> = vec![];
     for _ in 0..n_heroes{
         let mut hero = HeroHolder {
@@ -35,7 +36,7 @@ pub fn extract_basic_stats(filtered: Vec<[usize;2]>, n_heroes: usize) {
     }
 
     for i in 0..n_reps {
-        let  [id, team] = &filtered[i];
+        let  [id, team] = &::FILTERED.lock().unwrap()[i];
         let rep = &::REPLAYS.lock().unwrap()[*id];
 
         let won = if rep.winners == *team as u8 { 1 } else { 0 };

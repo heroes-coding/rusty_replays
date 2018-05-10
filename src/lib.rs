@@ -28,8 +28,44 @@ pub extern "C" fn add_basics(franchises_and_roles: *mut u8, n_heroes: u8) {
     load::add_basic_info(n_heroes,franchises_and_roles);
 }
 
+
 #[no_mangle]
-pub extern "C" fn add_replays(data: *mut u32, n_replays: u32, days_since_launch: u32) {
+pub extern "C" fn add_many_replays(
+    data: *mut u32, n_replays_array: *mut u32, modes_array: *mut u32, 
+    days_since_launch_array: *mut u32, cohorts: u32) -> u32 
+{
+    let mut p = data;
+    let mut r = n_replays_array;
+    let mut d = days_since_launch_array;
+    let mut m = modes_array;
+    let mut total_replays : usize = 0;
+    let mut offset : usize = 0;
+    unsafe {
+        for _c in 0..cohorts {
+            let n_replays = *r as usize;
+            r = r.offset(1);
+            let days_since_launch = *d;
+            d = d.offset(1);
+            let mode = *m as u8;
+            m = m.offset(1);
+            let end = offset + n_replays*unpack::N_INTS;
+            let mut rep_ints : Vec<u32> = Vec::new();
+            for _i in offset..end {
+                rep_ints.push(*p);
+                p = p.offset(1);
+            }
+            offset = end;
+            unpack::parse_replays(rep_ints,n_replays,days_since_launch,mode);
+            total_replays += n_replays;
+        }
+    }
+    
+    return total_replays as u32;
+}
+
+
+#[no_mangle]
+pub extern "C" fn add_replays(data: *mut u32, n_replays: u32, days_since_launch: u32, mode: u32) -> u32 {
     let mut p = data;
     let n_replays = n_replays as usize;
     let mut rep_ints : Vec<u32> = Vec::new();
@@ -39,7 +75,8 @@ pub extern "C" fn add_replays(data: *mut u32, n_replays: u32, days_since_launch:
             p = p.offset(1);
         }
     }
-    unpack::parse_replays(rep_ints,n_replays,days_since_launch);
+    unpack::parse_replays(rep_ints,n_replays,days_since_launch, mode as u8);
+    return n_replays as u32;
 }
 
 #[no_mangle]

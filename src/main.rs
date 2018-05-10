@@ -29,7 +29,7 @@ fn main() {
     let n_replays = rep_ints.len()/replays::unpack::N_INTS;
     // println!("called {}", ARRAY.lock().unwrap().len());
     // replays::add_replays(rep_ints,n_replays);
-    replays::unpack::parse_replays(rep_ints,n_replays,150);
+    replays::unpack::parse_replays(rep_ints,n_replays,150,1);
 
     let ateam : Vec<u8> = vec![75];
     let oteam : Vec<u8> = vec![];
@@ -43,7 +43,7 @@ fn main() {
 
     replays::filter::filter_replays(&ateam,&oteam, &aroles, &oroles, &maps, &regions, &modes, &min_msl, &max_msl);
 
-    //replays::extract::extract_basic_stats(78);
+    replays::extract::extract_basic_stats();
     // println!("Filtered indexes: {:?}",filtered);
 
 }

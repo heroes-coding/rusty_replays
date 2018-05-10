@@ -36,6 +36,7 @@ fn build_hero(talents: [u8;7], globes: u8, strucs: u8, mercs: u8, kda: u8, mmr: 
 pub struct Replay {
     pub heroes: [[Hero;5];2],
     pub teams: [[u8;5];2],
+    pub mode: u8,
     pub map: u8,
     pub first_to_10: u8,
     pub first_to_20: u8,
@@ -55,7 +56,7 @@ impl fmt::Display for Replay {
         // stream: `f`. Returns `fmt::Result` which indicates whether the
         // operation succeeded or failed. Note that `write!` uses syntax which
         // is very similar to `println!`.
-        write!(f, "MSL: {}, Length (mins): {}, Build: {}, Winners: {}, First To 10: {}, 20: {}, Fort: {}, Avg Lev D: {}, Region: {}",self.msl, self.length, self.build, self.winners, self.first_to_10, self.first_to_20, self.first_fort, self.avg_lev_diff, self.region).expect("could not write replay");;
+        write!(f, "MSL: {}, Length (mins): {}, Build: {}, Mode: {}, Winners: {}, First To 10: {}, 20: {}, Fort: {}, Avg Lev D: {}, Region: {}",self.msl, self.length, self.build, self.mode, self.winners, self.first_to_10, self.first_to_20, self.first_fort, self.avg_lev_diff, self.region).expect("could not write replay");;
         for t in 0..2 {
             write!(f, "\nTeam {}:",t).expect("could not write team");
             for i in 0..5 {
@@ -68,8 +69,8 @@ impl fmt::Display for Replay {
     }
 }
 
-fn build_replay(heroes: [[Hero;5];2], teams: [[u8;5];2], map: u8, first_to_10: u8, first_to_20: u8, first_fort: u8, avg_lev_diff: u8, winners: u8, region: u8, build: u8, length: u8, msl: u32) -> Replay {
-    Replay { heroes, teams, map, first_to_10, first_to_20, first_fort, avg_lev_diff, winners, region, build, length, msl }
+fn build_replay(heroes: [[Hero;5];2], teams: [[u8;5];2], mode: u8, map: u8, first_to_10: u8, first_to_20: u8, first_fort: u8, avg_lev_diff: u8, winners: u8, region: u8, build: u8, length: u8, msl: u32) -> Replay {
+    Replay { heroes, teams, mode, map, first_to_10, first_to_20, first_fort, avg_lev_diff, winners, region, build, length, msl }
 }
 
 fn parse_int(data_int: u32, int_number: usize, rep_data: &mut [u8]) {
@@ -94,7 +95,7 @@ fn parse_int(data_int: u32, int_number: usize, rep_data: &mut [u8]) {
 }
 
 
-pub fn parse_replays(replay_bytes: Vec<u32>, n_replays: usize, days_since_launch: u32) {
+pub fn parse_replays(replay_bytes: Vec<u32>, n_replays: usize, days_since_launch: u32, mode: u8) {
     println!("Should be processing {} replays", n_replays);
     for r in 0..n_replays {
         let mut d: [u8; N_DATA] = [0; N_DATA];
@@ -121,7 +122,7 @@ pub fn parse_replays(replay_bytes: Vec<u32>, n_replays: usize, days_since_launch
             ]
         ];
 
-        let rep = build_replay(heroes, teams, d[130], d[131], d[140], d[132], d[133], d[136], d[137]+1, d[138], d[139]+1, days_since_launch*1440 + (d[134] as u32 *60) as u32 + d[135] as u32);
+        let rep = build_replay(heroes, teams, mode, d[130], d[131], d[140], d[132], d[133], d[136], d[137]+1, d[138], d[139]+1, days_since_launch*1440 + (d[134] as u32 *60) as u32 + d[135] as u32);
 
         // build_replay(heroes, team0, team1, map: u8, first_to_10: u8, 
         // first_to_20: u8, first_fort: u8, avg_lev_diff: u8, winners: u8, region: u8, build: u8, msl: u32)
