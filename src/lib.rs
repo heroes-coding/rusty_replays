@@ -21,6 +21,7 @@ lazy_static! {
     pub static ref N_HEROES: Mutex<usize> = Mutex::new(0);   
     pub static ref N_FILTERED: Mutex<usize> = Mutex::new(0);   
     pub static ref FILTERED: Mutex<Vec<[usize;2]>> = Mutex::new(vec![]);
+    pub static ref RESULTS: Mutex<Vec<f32>> = Mutex::new(vec![]);
 }
 
 #[no_mangle]
@@ -28,6 +29,69 @@ pub extern "C" fn add_basics(franchises_and_roles: *mut u8, n_heroes: u8) {
     load::add_basic_info(n_heroes,franchises_and_roles);
 }
 
+
+#[no_mangle]
+pub extern "C" fn filter_replays (
+    a_roles: *mut u8, 
+    o_roles: *mut u8, 
+    a_team: *mut u8,
+    a_team_n: u8,
+    o_team: *mut u8,
+    o_team_n: u8,
+    maps_array: *mut u8,
+    n_maps: u8,
+    modes_array: *mut u8,
+    n_modes: u8,
+    regions_array: *mut u8,
+    n_regions: u8,
+    min_msl: u32,
+    max_msl: u32
+    ) -> u32 {
+        
+    let mut aroles : [u8;5] = [0,0,0,0,0];
+    let mut oroles : [u8;5] = [0,0,0,0,0];
+    let mut ateam : Vec<u8> = vec![];
+    let mut oteam : Vec<u8> = vec![];
+    let mut maps : Vec<u8> = vec![];
+    let mut regions : Vec<u8> = vec![];
+    let mut modes : Vec<u8> = vec![];
+
+    let mut a_roles = a_roles;
+    let mut o_roles = o_roles;
+    let mut a_team = a_team;
+    let mut o_team = o_team;
+    let mut maps_array = maps_array;
+    let mut modes_array = modes_array;
+    let mut regions_array = regions_array;
+
+    for x in 0..5 { unsafe { aroles[x] = *a_roles; a_roles = a_roles.offset(1); } }
+    for x in 0..5 { unsafe { oroles[x] = *o_roles; o_roles = o_roles.offset(1); } }
+    for _x in 0..a_team_n as usize { unsafe { ateam.push(*a_team); a_team = a_team.offset(1); } }
+    for _x in 0..o_team_n as usize { unsafe { oteam.push(*o_team); o_team = o_team.offset(1); } } 
+    for _x in 0..n_maps as usize { unsafe { maps.push(*maps_array); maps_array = maps_array.offset(1); } } 
+    for _x in 0..n_modes as usize { unsafe { modes.push(*modes_array); modes_array = modes_array.offset(1); } } 
+    for _x in 0..n_regions as usize { unsafe { regions.push(*regions_array); regions_array = regions_array.offset(1); } }
+
+    let n_base = filter::filter_replays(&ateam,&oteam, &aroles, &oroles, &maps, &regions, &modes, &min_msl, &max_msl);
+    //(regions[0] + regions[1] + regions[2] + regions[3]) as u32
+    n_base
+}
+
+#[no_mangle]
+pub extern "C" fn get_n_filtered() -> u32 {
+    *N_FILTERED.lock().unwrap() as u32
+}
+
+#[no_mangle]
+pub extern "C" fn get_stats() -> *mut f32 {
+    extract::extract_basic_stats()
+    /*
+    let mut stats = extract::extract_basic_stats();
+    unsafe {
+        stats.as_mut_ptr()
+    }
+    */
+}
 
 #[no_mangle]
 pub extern "C" fn add_many_replays(

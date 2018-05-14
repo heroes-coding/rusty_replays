@@ -31,19 +31,19 @@ fn main() {
     // replays::add_replays(rep_ints,n_replays);
     replays::unpack::parse_replays(rep_ints,n_replays,150,1);
 
-    let ateam : Vec<u8> = vec![75];
-    let oteam : Vec<u8> = vec![];
+    let ateam : Vec<u8> = vec![1];
+    let oteam : Vec<u8> = vec![3];
     let aroles : [u8;5] = [0,0,0,0,0];
     let oroles : [u8;5] = [0,0,0,0,0];
     let maps : Vec<u8> = vec![];
-    let regions : Vec<u8> = vec![];
+    let regions : Vec<u8> = vec![1,2,3,5];
     let modes : Vec<u8> = vec![];
     let min_msl = 0;
     let max_msl = 0;
 
-    replays::filter::filter_replays(&ateam,&oteam, &aroles, &oroles, &maps, &regions, &modes, &min_msl, &max_msl);
+    let n_base = replays::filter::filter_replays(&ateam,&oteam, &aroles, &oroles, &maps, &regions, &modes, &min_msl, &max_msl);
 
     replays::extract::extract_basic_stats();
-    // println!("Filtered indexes: {:?}",filtered);
+    println!("Base filtered and returned {} replays",n_base);
 
 }

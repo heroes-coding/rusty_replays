@@ -1,18 +1,24 @@
 pub fn mean(stats: &Vec<u8>) -> f32 {
     // Returns mean, DUR!!!
-    let n = stats.len() as f32;
+
+    let n = stats.len();
+    if n==0 { return 0. }
+    let n = n as f32;
     let sum : f32 = stats.iter().map(|x| *x as f32).sum();
     sum/n
 }
 
 pub fn sigma(stats: &Vec<u8>, mean: f32) -> f32 {
     // Mean is passed in to prevent duplicate computation
-    let n = stats.len() as f32;
+    let n = stats.len();
+    if n==0 { return 0. }
+    let n = n as f32;
     let ss : f32 = stats.iter().map(|x| (*x as f32 - mean).powf(2.)).sum();
-    (ss/(n-1.)).powf(0.5)
+    let result = (ss/(n-1.)).powf(0.5);
+    if result.is_nan() { 0. } else { result }
 }
 
-pub fn exponential_smoother(ys: &Vec<u8>, xs: &Vec<u32>) -> [Vec<f32>;2] {
+pub fn exponential_smoother(ys: &Vec<u8>, xs: &Vec<u32>, threshold: f32) -> [Vec<f32>;2] {
     let filter_outliers = false;
     let should_smooth = false;
 
@@ -86,7 +92,6 @@ pub fn exponential_smoother(ys: &Vec<u8>, xs: &Vec<u32>) -> [Vec<f32>;2] {
     }
 
     let mut r = 0;
-    let threshold = 25.;
     if counter as f32 > threshold {
         let bin_size = (counter as f32)/threshold;
         let mut p=0;
@@ -100,7 +105,6 @@ pub fn exponential_smoother(ys: &Vec<u8>, xs: &Vec<u32>) -> [Vec<f32>;2] {
             if (p as f32)/bin_size > r as f32 && x - prevx > 0.001 {
                 prevx = x;
                 smoothed_x[r] = totx/(c as f32);
-                println!("Toty: {}, c: {}",toty, c);
                 smoothed_y[r] = toty/(c as f32);
                 r += 1;
                 totx = 0.;
