@@ -1,3 +1,6 @@
+use ::chrono::{Duration, DateTime, Utc};
+use chrono::prelude::*;
+
 pub fn mean(stats: &Vec<u8>) -> f32 {
     // Returns mean, DUR!!!
 
@@ -16,6 +19,51 @@ pub fn sigma(stats: &Vec<u8>, mean: f32) -> f32 {
     let ss : f32 = stats.iter().map(|x| (*x as f32 - mean).powf(2.)).sum();
     let result = (ss/(n-1.)).powf(0.5);
     if result.is_nan() { 0. } else { result }
+}
+
+
+pub fn date_from_msl(mins: u32) -> DateTime<Utc> {
+    Utc.ymd(2015, 5, 1).and_hms(20, 0, 0) + Duration::minutes(mins as i64)
+}
+
+pub fn upper_month_from_msl(mins: u32) -> DateTime<Utc> {
+    let date = date_from_msl(mins);
+    let month = date.month();
+    let year = date.year();
+    Utc.ymd(year, month, 1).and_hms(0,0,0)
+}
+
+pub fn x_grouper(ys: &Vec<u8>, xs: &Vec<u32>, minutes: u32) -> [Vec<f32>;2] {
+    let n_points = ys.len();
+    let mut y_sums : Vec<f32> = vec![];
+    let mut y_counts : Vec<f32> = vec![];
+
+    let mut upper_x = xs[n_points-1];
+    let mut upper_month = upper_month_from_msl(upper_x);
+    println!("Minutes {}",minutes);
+    let mut y_sum : f32 = 0.;
+    let mut y_count : f32 = 0.;
+    for p in 0..n_points {
+        let point = n_points-p-1;
+        let x = xs[point];
+        let condition = if minutes > 0 { x < upper_x - minutes } else { date_from_msl(x) < upper_month };
+        if condition {
+            y_sums.push(y_sum);
+            y_counts.push(y_count);
+            y_sum = 0.;
+            y_count = 0.;
+            if minutes > 0 { 
+                upper_x = upper_x - minutes 
+            }
+            else { upper_month = upper_month_from_msl(x) }
+        }
+        y_sum += ys[point] as f32;
+        y_count += 1.;
+    }
+    y_sums.push(y_sum);
+    y_counts.push(y_count);
+    println!("ysums: {:?}, ycounts: {:?}",y_sums, y_counts);
+    [y_sums,y_counts]
 }
 
 pub fn exponential_smoother(ys: &Vec<u8>, xs: &Vec<u32>, threshold: f32) -> [Vec<f32>;2] {

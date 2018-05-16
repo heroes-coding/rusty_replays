@@ -1,6 +1,7 @@
 use ::math::mean;
 use ::math::sigma;
-use ::math::exponential_smoother;
+// use ::math::exponential_smoother;
+use ::math::x_grouper;
 use unpack::Hero;
 
 #[derive(Debug)]
@@ -100,8 +101,9 @@ pub fn pack_stats(summary_stats: &mut Vec<f32>, stats_holder: &HeroHolder) {
     summary_stats.push(sigma(&lengths,lengths_mean));
 }
 
-pub fn add_timed_data(summary_stats: &mut Vec<f32>, stats_holder: &HeroHolder) {
-    let res = exponential_smoother(&stats_holder.wins, &stats_holder.msls, 100.);
+pub fn add_timed_data(summary_stats: &mut Vec<f32>, stats_holder: &HeroHolder, density: f32) {
+    // let res = exponential_smoother(&stats_holder.wins, &stats_holder.msls, density);
+    let res = x_grouper(&stats_holder.wins, &stats_holder.msls, density as u32);
     let n_points = res[0].len();
     summary_stats.push((n_points*2) as f32);
     for d in 0..2 {
@@ -111,7 +113,7 @@ pub fn add_timed_data(summary_stats: &mut Vec<f32>, stats_holder: &HeroHolder) {
     }
 }
 
-pub fn extract_basic_stats() -> *mut f32 {
+pub fn extract_basic_stats(ateam: Vec<u8>, density: f32) -> *mut f32 {
     let n_reps = *::N_FILTERED.lock().expect("Could not open the N_FILTERED mutex");
     let n_heroes = *::N_HEROES.lock().expect("Could not open the N_HEROES mutex");
     println!("n_reps: {}, n_heroes: {}",n_reps,n_heroes);
@@ -149,14 +151,19 @@ pub fn extract_basic_stats() -> *mut f32 {
     let mut summary_stats : Vec<f32> = vec![];
 
     // Add timed data for overall stats
-    add_timed_data(&mut summary_stats, &overall);
+    add_timed_data(&mut summary_stats, &overall, density);
+    for i in 0..ateam.len() {
+        add_timed_data(&mut summary_stats, &hero_stats[ateam[i] as usize], density);
+    }
 
 
-    let n_stats = 19;
+    // let n_stats = 19;
     for h in 0..n_heroes {
         pack_stats(&mut summary_stats, &hero_stats[h]);
+        /*
         let start = 0+n_stats*h;
         let end = (1+h)*n_stats;
+        */
         // println!("Hero {} (start: {}, end: {}) stats: {:?}",h,start,end,&summary_stats[start..end]);
     }
     pack_stats(&mut summary_stats, &overall);
@@ -164,11 +171,7 @@ pub fn extract_basic_stats() -> *mut f32 {
     // summary_stats
     let mut summary_mutex = ::RESULTS.lock().expect("Could not lock RESULTS mutex");
     *summary_mutex = summary_stats;
-
-    unsafe {
-        summary_mutex.as_mut_ptr()
-    }
-    
+     summary_mutex.as_mut_ptr()   
     // let res = exponential_smoother(&hero_stats[0].wins, &hero_stats[0].msls);
     // println!("Exponential smoother results: {:?}", res);
 }

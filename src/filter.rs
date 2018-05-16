@@ -50,6 +50,7 @@ pub fn filter_replays(  ateam: &Vec<u8>, oteam: &Vec<u8>, aroles: &[u8;5], orole
     for i in 0..n_reps {
         // get replay from parent mod (lib.rs)
         let rep = &::REPLAYS.lock().unwrap()[i];
+        
         if check_min_msl && rep.msl < *min_msl { continue } 
         if check_max_msl && rep.msl > *max_msl { continue } 
         if check_modes && !modes.contains(&rep.mode) { continue } 
@@ -59,6 +60,15 @@ pub fn filter_replays(  ateam: &Vec<u8>, oteam: &Vec<u8>, aroles: &[u8;5], orole
         if check_maps && !maps.contains(&rep.map) { continue }
         if check_regions && !regions.contains(&rep.region) { continue } 
 
+        // eliminate mirror matchups
+        let mut mirror = false;
+        for h in 0..5 {
+            let hero = rep.teams[0][h];
+            for oh in 0..5 {
+                if hero == rep.teams[1][oh] { mirror = true }
+            }
+        }
+        if mirror { continue }
 
         // construct roles for this replay on the fly instead of storing them
         let mut roles : [[u8;5];2] = [[0,0,0,0,0],[0,0,0,0,0]];

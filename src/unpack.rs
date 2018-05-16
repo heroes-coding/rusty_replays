@@ -124,7 +124,9 @@ pub fn parse_replays(replay_bytes: Vec<u32>, n_replays: usize, days_since_launch
         ];
 
         // d[137] is region.  China replays where incorrectly encoded as 3 (3+1 = 4 NOT 5) instead of 4 because of the way the bitpacking was done
-        let rep = build_replay(heroes, teams, mode, d[130], d[131], d[140], d[132], d[133], d[136], if d[137]+1 < 4 { d[137]+1 } else { 5 }, d[138], d[139]+1, days_since_launch*1440 + (d[134] as u32 *60) as u32 + d[135] as u32);
+        // println!("d[134]: {}, d[135]: {}", d[134],d[135]);
+        let msl : u32 = days_since_launch*1440 + (d[134] as u32)*60 + d[135] as u32;
+        let rep = build_replay(heroes, teams, mode, d[130], d[131], d[140], d[132], d[133], d[136], if d[137]+1 < 4 { d[137]+1 } else { 5 }, d[138], d[139]+1, msl);
 
         // build_replay(heroes, team0, team1, map: u8, first_to_10: u8, 
         // first_to_20: u8, first_fort: u8, avg_lev_diff: u8, winners: u8, region: u8, build: u8, msl: u32)

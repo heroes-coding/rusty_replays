@@ -1,9 +1,10 @@
 #[macro_use]
 extern crate lazy_static;
+extern crate chrono;
 // extern crate rusty_machine as rm;
 use std::sync::Mutex;
 use std::mem;
-use std::ffi::{CString, CStr};
+use std::ffi::{CString};
 use std::os::raw::{c_char, c_void};
 
 pub mod unpack;
@@ -83,9 +84,24 @@ pub extern "C" fn get_n_filtered() -> u32 {
 }
 
 #[no_mangle]
-pub extern "C" fn get_stats() -> *mut f32 {
-    extract::extract_basic_stats()
-    /*
+pub extern "C" fn get_filtered_msl() -> *mut u32 {
+    let n_filtered = *N_FILTERED.lock().unwrap() as usize;
+    let mut msls : Vec<u32> = vec![];
+    msls.push(n_filtered as u32);
+    for r in 0..n_filtered {
+        let [id, team] = &FILTERED.lock().unwrap()[r];
+        msls.push(REPLAYS.lock().unwrap()[*id].msl);
+    }
+    msls.as_mut_ptr()
+}
+
+#[no_mangle]
+pub extern "C" fn get_stats(a_team: *mut u8, a_team_n: u8, density: u8) -> *mut f32 {
+    let mut a_team = a_team;
+    let mut ateam : Vec<u8> = vec![];
+    for _x in 0..a_team_n as usize { unsafe { ateam.push(*a_team); a_team = a_team.offset(1); } }
+    extract::extract_basic_stats(ateam, density as f32)
+    /* 
     let mut stats = extract::extract_basic_stats();
     unsafe {
         stats.as_mut_ptr()
